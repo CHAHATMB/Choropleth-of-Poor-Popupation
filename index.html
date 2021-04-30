@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <link rel="stylesheet" href="style.css">
+        
+        
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.5.1/dist/leaflet.css"
+/>
+<script src="https://unpkg.com/leaflet@1.5.1/dist/leaflet.js"></script>
+<script src="./citysdk.js"></script>
+
+        <script src="state_pop.js"></script>
+<style>
+        html, body, #map {
+            width: 100%;
+            height: 100%;
+            padding: 0;
+            margin: 0;
+        }
+        </style>
+        <title>Agriculture Mapping</title>
+    </head>
+<body>
+
+
+<div id="map"></div>
+<script type="text/javascript">
+var map = L.map('map', {
+            zoomControl:true, maxZoom:28, minZoom:1
+        }).fitBounds([[6.143764917121963,61.8817880605193],[42.85477184167639,94.10680871290283]]);
+
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  attribution:
+    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+
+    tileSize: 512,
+    zoomOffset: -1
+}).addTo(map);
+
+
+L.geoJson(stateData).addTo(map);
+
+
+function getColor(d) {
+	console.log("colour:"+d);
+    return d > 10000000 ? '#800026' :
+           d > 5000000  ? '#BD0026' :
+           d > 1000000  ? '#E31A1C' :
+           d > 500000 ? '#FC4E2A' :
+           d > 100000   ? '#FD8D3C' :
+           d > 50000   ? '#FEB24C' :
+           d > 10000   ? '#FED976' :
+                      '#FFEDA0';
+}
+
+
+function style(feature) {
+    return {
+        fillColor: getColor(feature.properties.filename_4),
+        weight: 2,
+        opacity: 1,
+        color: 'white',
+        dashArray: '3',
+        fillOpacity: 0.7
+    };
+}
+
+L.geoJson(stateData, {style: style}).addTo(map);
+
+function highlightFeature(e) {
+    var layer = e.target;
+
+    layer.setStyle({
+        weight: 5,
+        color: '#666',
+        dashArray: '',
+        fillOpacity: 0.7
+    });
+
+    if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+        layer.bringToFront();
+    }
+    info.update(layer.feature.properties);
+} 		
+
+var geojson;
+// ... our listeners
+geojson = L.geoJson(stateData);
+
+function resetHighlight(e) {
+    geojson.resetStyle(e.target);
+    info.update();
+}
+
+
+function zoomToFeature(e) {
+    map.fitBounds(e.target.getBounds());
+}
+
+function onEachFeature(feature, layer) {
+    layer.on({
+        mouseover: highlightFeature,
+        mouseout: resetHighlight,
+        click: zoomToFeature
+    });
+}
+
+geojson = L.geoJson(stateData, {
+    style: style,
+    onEachFeature: onEachFeature
+}).addTo(map);
+
+
+
+
+//=-------------------- custom info control---------------
+
+
+var info = L.control();
+
+info.onAdd = function (map) {
+    this._div = L.DomUtil.create('div', 'info'); // create a div with a class "info"
+    this.update();
+    return this._div;
+};
+
+// method that we will use to update the control based on feature properties passed
+info.update = function (props) {
+    this._div.innerHTML = '<h4>India Poor Population Count</h4>' +  (props ?
+        '<b>' + props.NAME_1 + '</b><br />' + props.filename_4 + ' peoples</sup>'
+        : 'Hover over a state');
+};
+
+info.addTo(map);
+
+
+
+var legend = L.control({position: 'bottomright'});
+
+legend.onAdd = function (map) {
+
+    var div = L.DomUtil.create('div', 'info legend'),
+        grades = [10000000, 5000000 , 1000000 , 500000, 100000  , 50000  , 10000]
+         labels = [];
+
+    // loop through our density intervals and generate a label with a colored square for each interval
+    for (var i = 0; i < grades.length; i++) {
+        div.innerHTML +=
+            '<i style="background:' + getColor(grades[i] + 1) + '"></i> ' +
+            grades[i] + (grades[i + 1] ? '&ndash;' + grades[i + 1] + '<br>' : '+');
+    }
+
+    return div;
+};
+
+legend.addTo(map);
+
+
+
+
+
+
+
+
+	</script>
+</body>
